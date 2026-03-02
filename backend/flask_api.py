@@ -88,3 +88,34 @@ if __name__ == '__main__':
         port=5000,
         debug=True
     )
+
+@app.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    """
+    AI chatbot endpoint - Nietzsche filozófia alapján válaszol
+    """
+    from flask import request
+    
+    data = request.json
+    user_message = data.get('message', '')
+    
+    # Mock AI response (később OpenAI/Groq)
+    nietzsche_responses = {
+        'örök visszatérés': 'Az örök visszatérés azt jelenti: élj úgy, mintha minden pillanatod örökké ismétlődne. "Semmi energia nem veszik el, csak átalakul" - ez a GFLO filozófiája is.',
+        'amor fati': 'Amor fati: szeresd a sorsodat! Fogadd el a randomságot, de strukturáld. A GFLO-ban ezt VRF-fel valósítjuk meg.',
+        'übermensch': 'Az Übermensch nem felhalmoz, hanem teremt értéket. A GFLO XP rendszer az aktivitást jutalmazza, nem a birtoklást.'
+    }
+    
+    # Egyszerű keyword matching (később AI)
+    response = "Érdekes kérdés! A GFLO filozófiája szerint..."
+    for keyword, answer in nietzsche_responses.items():
+        if keyword in user_message.lower():
+            response = answer
+            break
+    
+    return jsonify({
+        'response': response,
+        'source': 'ElanMust.AI',
+        'axiom': 'Eternal Return'
+    })
+
