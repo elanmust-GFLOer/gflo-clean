@@ -9,6 +9,11 @@ load_dotenv(os.path.expanduser("~/.env"))
 app = Flask(__name__)
 CORS(app)
 
+# ── FAUCET BLUEPRINT ──────────────────────────────────────────
+from gflo_faucet import faucet_bp
+app.register_blueprint(faucet_bp)
+# ─────────────────────────────────────────────────────────────
+
 # Web3 Setup
 RPC_URL = os.getenv("SEPOLIA_RPC_URL", "https://sepolia.drpc.org")
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
@@ -16,7 +21,7 @@ w3 = Web3(Web3.HTTPProvider(RPC_URL))
 # Contract Addresses (update as needed)
 PIECORE_ADDRESS = os.getenv("PIECORE_ADDRESS", "0x9CF55d0b9D61Dc28EF3cb10765CF4b861Cd0991e")
 GASFEELOOP_ADDRESS = os.getenv("GASFEELOOP_ADDRESS", "0xd2C926F67080D6315b5dbBc7D621d729Cfe8A9C7")
-GFLOGNITION_ADDRESS = os.getenv("GFLOGNITION_ADDRESS", "0x0000000000000000000000000000000000000000")
+GFLOGNITION_ADDRESS = os.getenv("GFLOGNITION_ADDRESS", "0x414DEDcf9264614Fd087BDa58bE27a0B698CcC54")
 
 # Updated PIECore ABI (with extended functions)
 PIECORE_ABI = [
@@ -195,14 +200,14 @@ def get_identity(address):
     """Get complete identity info for a user"""
     try:
         addr = Web3.to_checksum_address(address)
-        
+
         # Get PIECore identity
         xp, path, tier, nextThreshold = pie.functions.getIdentity(addr).call()
         eligible = pie.functions.isEligibleForUpgrade(addr).call()
-        
+
         # Get GasFeeLoop info
         stake_info = gas.functions.getUserInfo(addr).call()
-        
+
         # Format response
         response = {
             'address': address,
@@ -221,7 +226,7 @@ def get_identity(address):
                 'remainingEpochXP': stake_info[4] / 1e18
             }
         }
-        
+
         # Add GFLOIgnition info if available
         if ignition:
             try:
@@ -234,7 +239,7 @@ def get_identity(address):
                 }
             except:
                 pass
-        
+
         return jsonify(response)
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -246,7 +251,7 @@ def get_pie_identity(address):
         addr = Web3.to_checksum_address(address)
         xp, path, tier, nextThreshold = pie.functions.getIdentity(addr).call()
         eligible = pie.functions.isEligibleForUpgrade(addr).call()
-        
+
         return jsonify({
             'address': address,
             'xp': xp,
@@ -264,7 +269,7 @@ def get_stake_info(address):
     try:
         addr = Web3.to_checksum_address(address)
         stake_info = gas.functions.getUserInfo(addr).call()
-        
+
         return jsonify({
             'address': address,
             'stakeAmount': stake_info[0] / 1e18,
@@ -287,10 +292,10 @@ def upgrade_status(address):
     """Check upgrade eligibility"""
     try:
         addr = Web3.to_checksum_address(address)
-        
+
         xp, path, tier, nextThreshold = pie.functions.getIdentity(addr).call()
         eligible = pie.functions.isEligibleForUpgrade(addr).call()
-        
+
         response = {
             'address': address,
             'currentPath': PATH_NAMES.get(path, 'Unknown'),
@@ -300,7 +305,7 @@ def upgrade_status(address):
             'eligibleForUpgrade': eligible,
             'xpProgress': f"{xp}/{nextThreshold}"
         }
-        
+
         # Add ignition info if available
         if ignition:
             try:
@@ -314,7 +319,7 @@ def upgrade_status(address):
                 }
             except:
                 pass
-        
+
         return jsonify(response)
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -366,16 +371,16 @@ def batch_identities():
     try:
         data = request.json
         addresses = data.get('addresses', [])
-        
+
         if not addresses or len(addresses) > 100:
             return jsonify({'error': 'Invalid addresses count (max 100)'}), 400
-        
+
         results = []
         for addr_str in addresses:
             try:
                 addr = Web3.to_checksum_address(addr_str)
                 xp, path, tier, nextThreshold = pie.functions.getIdentity(addr).call()
-                
+
                 results.append({
                     'address': addr_str,
                     'xp': xp,
@@ -385,7 +390,7 @@ def batch_identities():
                 })
             except:
                 results.append({'address': addr_str, 'error': 'Invalid'})
-        
+
         return jsonify({'results': results, 'count': len(results)})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
